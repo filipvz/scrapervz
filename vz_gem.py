@@ -129,19 +129,44 @@ def generiraj_ics(dogadaj):
     ]
     return "\r\n".join(lines)
 
+def datum_u_datetime(datum_string):
+    dijelovi = datum_string.split()
+    if len(dijelovi) < 2:
+        return None
+
+    try:
+        dan = int(dijelovi[0])
+    except ValueError:
+        return None
+
+    kratica = dijelovi[1].lower()
+    mjesec_broj = MJESECI.get(kratica, "01")
+    try:
+        mjesec = int(mjesec_broj)
+    except ValueError:
+        return None
+
+    danas = datetime.now().date()
+    kandidati = []
+    for godina in (danas.year - 1, danas.year, danas.year + 1):
+        try:
+            kandidati.append(datetime(godina, mjesec, dan).date())
+        except ValueError:
+            continue
+
+    if not kandidati:
+        return None
+
+    # Ako godina nije dostupna u izvoru, uzmi datum najbliži današnjem.
+    odabrani = min(kandidati, key=lambda dt: abs((dt - danas).days))
+    return datetime.combine(odabrani, datetime.min.time())
+
+
 def datum_u_broj(datum_string):
-    dijelovi=datum_string.split()
-    dan=dijelovi[0]
-    kratica=dijelovi[1]
-    mjesec_broj=MJESECI.get(kratica.lower(),"01")
-    danas = datetime.now()
-    godina = danas.year
-    
-    
-    return f"{godina}{mjesec_broj}{dan.zfill(2)}"
-    
-
-
+    datum = datum_u_datetime(datum_string)
+    if datum is None:
+        return "00000000"
+    return datum.strftime("%Y%m%d")
    
 #strealit sučelje
 st.set_page_config(page_title="Događaji u Varaždinu", page_icon="🎭",layout="centered")
@@ -155,7 +180,13 @@ st.write(postavke["opis"])
 if st.button(postavke["gumb"]):
     with st.spinner("Dohvaćanje događaja..."):#vizualizacija pretrage
         rezultati=dohvati_dogadaje(postavke["url"])
-        rezultati=sorted(rezultati, key=lambda d: datum_u_broj(d["datum"]), reverse=True)
+        danas = datetime.now().date()
+        filtrirani_rezultati = []
+        for d in rezultati:
+            datum_eventa = datum_u_datetime(d["datum"])
+            if datum_eventa and datum_eventa.date() >= danas:
+                filtrirani_rezultati.append(d)
+        rezultati = sorted(filtrirani_rezultati, key=lambda d: datum_u_broj(d["datum"]))
     if rezultati:
         st.success(postavke["Uspjeh"].format(len(rezultati))) #ispis rezultata na web stranicu
         for i, d in enumerate(rezultati):
@@ -165,13 +196,8 @@ if st.button(postavke["gumb"]):
                 st.caption(f"📍 **{postavke['lbl_lokacija']}:** {d['lokacija']}")
                      
                          
-                danas_broj = datetime.now().strftime("%Y%m%d")
-                prije_30_dana = (datetime.now() - timedelta(days=30)).strftime("%Y%m%d")
-                
-                if datum_u_broj(d["datum"])>=danas_broj:
-                    
-                    ics_data=generiraj_ics(d)
-                    st.download_button(
+                ics_data=generiraj_ics(d)
+                st.download_button(
                     label="📅 Dodaj u kalendar",
                     data=ics_data,
                     file_name=f"{d['naslov']}.ics",
@@ -189,6 +215,10 @@ st.write("")
 
 st.write("Powered by Filip (20% Digital)")  
         
+
+
+
+
 
 
 
