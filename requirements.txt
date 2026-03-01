@@ -1,5 +1,6 @@
 streamlit
 requests
-ics==0.7.2
+
 beautifulsoup4
+ics
 
