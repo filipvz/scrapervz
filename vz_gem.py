@@ -1,7 +1,7 @@
 import streamlit as st  
 import requests
 from bs4 import BeautifulSoup
-from ics import Calendar,Event
+import uuid
 from datetime import datetime,timedelta
 
 
@@ -94,15 +94,40 @@ def dohvati_dogadaje(url):
             
     return dogadaji_lista
 
+def _ics_escape(vrijednost):
+    tekst = str(vrijednost or "")
+    return (
+        tekst.replace("\\", "\\\\")
+        .replace(";", r"\;")
+        .replace(",", r"\,")
+        .replace("\n", r"\n")
+    )
+
+
 def generiraj_ics(dogadaj):
-    cal=Calendar()
-    e=Event()
-    e.name=dogadaj["naslov"]
-    datum_ics=datum_u_broj(dogadaj["datum"])
-    e.begin=datum_ics
-    e.location=dogadaj["lokacija"]
-    cal.events.add(e)
-    return cal.serialize()
+    datum_ics = datum_u_broj(dogadaj["datum"])
+    pocetak = datetime.strptime(datum_ics, "%Y%m%d")
+    kraj = pocetak + timedelta(days=1)
+    dtstamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    uid = f"{uuid.uuid4()}@vz-gem"
+
+    lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//vz_gem//Event Export//HR",
+        "CALSCALE:GREGORIAN",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"DTSTAMP:{dtstamp}",
+        f"DTSTART;VALUE=DATE:{pocetak.strftime('%Y%m%d')}",
+        f"DTEND;VALUE=DATE:{kraj.strftime('%Y%m%d')}",
+        f"SUMMARY:{_ics_escape(dogadaj['naslov'])}",
+        f"LOCATION:{_ics_escape(dogadaj['lokacija'])}",
+        "END:VEVENT",
+        "END:VCALENDAR",
+        "",
+    ]
+    return "\r\n".join(lines)
 
 def datum_u_broj(datum_string):
     dijelovi=datum_string.split()
@@ -133,7 +158,7 @@ if st.button(postavke["gumb"]):
         rezultati=sorted(rezultati, key=lambda d: datum_u_broj(d["datum"]), reverse=True)
     if rezultati:
         st.success(postavke["Uspjeh"].format(len(rezultati))) #ispis rezultata na web stranicu
-        for d in rezultati:
+        for i, d in enumerate(rezultati):
             with st.container():
                 st.subheader(d['naslov'])
                 st.markdown(f"📅 **{postavke['lbl_datum']}:** {d['datum']} | ⏰ **{postavke['lbl_vrijeme']}:** {d['vrijeme']}")
@@ -150,7 +175,8 @@ if st.button(postavke["gumb"]):
                     label="📅 Dodaj u kalendar",
                     data=ics_data,
                     file_name=f"{d['naslov']}.ics",
-                    mime="text/calendar"
+                    mime="text/calendar",
+                    key=f"download_ics_{i}"
                 )         
                 st.divider() 
     else:
