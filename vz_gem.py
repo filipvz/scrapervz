@@ -14,7 +14,7 @@ MJESECI={
 JEZICI={
     "Hrvatski HR":{
         "url":"https://www.tourism-varazdin.hr/kalendar-dogadanja/",
-        "naslov":"Događaji u varaždinu",
+        "naslov":"Događaji u Varaždinu",
         "opis":"Dobrodošli u našu aplikaciju koja prikazuje događaje u Varaždinu",
         "gumb":"Dohvati najnovije događaje",
         "ucitavanje":"Dohvaćanje događaja...",
@@ -215,6 +215,7 @@ st.write("")
 
 st.write("Powered by Filip (20% Digital)")  
         
+
 
 
 
