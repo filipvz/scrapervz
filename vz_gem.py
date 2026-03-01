@@ -1,7 +1,16 @@
 import streamlit as st  
 import requests
 from bs4 import BeautifulSoup
+from ics import Calendar,Event
+from datetime import datetime,timedelta
 
+
+MJESECI={
+    "sij":"01","vel":"02","ožu":"03",
+    "tra":"04","svi":"05","lip":"06",
+    "srp":"07","kol":"08","ruj":"09",
+    "lis":"10","stu":"11","pro":"12"
+}
 JEZICI={
     "Hrvatski HR":{
         "url":"https://www.tourism-varazdin.hr/kalendar-dogadanja/",
@@ -31,15 +40,17 @@ JEZICI={
         "lbl_naslov":"Title"
         
     }
-}
+} 
 
-def dohvati_dogadaje(postavke_jezika):
-    URL=postavke_jezika["url"]
+@st.cache_data(ttl=3600)
+def dohvati_dogadaje(url):
+    
+    
     headers={
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     }
     
-    response=requests.get(URL,headers=headers)#GET zahtjer za server
+    response=requests.get(url,headers=headers)#GET zahtjer za server
     dogadaji_lista=[]
     if response.status_code==200: #status kod 200 ok provjera servera
         
@@ -83,6 +94,30 @@ def dohvati_dogadaje(postavke_jezika):
             
     return dogadaji_lista
 
+def generiraj_ics(dogadaj):
+    cal=Calendar()
+    e=Event()
+    e.name=dogadaj["naslov"]
+    datum_ics=datum_u_broj(dogadaj["datum"])
+    e.begin=datum_ics
+    e.location=dogadaj["lokacija"]
+    cal.events.add(e)
+    return cal.serialize()
+
+def datum_u_broj(datum_string):
+    dijelovi=datum_string.split()
+    dan=dijelovi[0]
+    kratica=dijelovi[1]
+    mjesec_broj=MJESECI.get(kratica.lower(),"01")
+    danas = datetime.now()
+    godina = danas.year
+    
+    
+    return f"{godina}{mjesec_broj}{dan.zfill(2)}"
+    
+
+
+   
 #strealit sučelje
 st.set_page_config(page_title="Događaji u Varaždinu", page_icon="🎭",layout="centered")
 odabrani_jezik=st.radio("odaberite jezik/Select language: ",["Hrvatski HR","English EN"],horizontal=True)
@@ -94,7 +129,8 @@ st.write(postavke["opis"])
 #gumb za dohvat događaja
 if st.button(postavke["gumb"]):
     with st.spinner("Dohvaćanje događaja..."):#vizualizacija pretrage
-        rezultati=dohvati_dogadaje(postavke)
+        rezultati=dohvati_dogadaje(postavke["url"])
+        rezultati=sorted(rezultati, key=lambda d: datum_u_broj(d["datum"]), reverse=True)
     if rezultati:
         st.success(postavke["Uspjeh"].format(len(rezultati))) #ispis rezultata na web stranicu
         for d in rezultati:
@@ -102,8 +138,21 @@ if st.button(postavke["gumb"]):
                 st.subheader(d['naslov'])
                 st.markdown(f"📅 **{postavke['lbl_datum']}:** {d['datum']} | ⏰ **{postavke['lbl_vrijeme']}:** {d['vrijeme']}")
                 st.caption(f"📍 **{postavke['lbl_lokacija']}:** {d['lokacija']}")
-                st.divider()                 
+                     
+                         
+                danas_broj = datetime.now().strftime("%Y%m%d")
+                prije_30_dana = (datetime.now() - timedelta(days=30)).strftime("%Y%m%d")
                 
+                if datum_u_broj(d["datum"])>=danas_broj:
+                    
+                    ics_data=generiraj_ics(d)
+                    st.download_button(
+                    label="📅 Dodaj u kalendar",
+                    data=ics_data,
+                    file_name=f"{d['naslov']}.ics",
+                    mime="text/calendar"
+                )         
+                st.divider() 
     else:
         st.error(postavke["greska"])
 st.write("")
