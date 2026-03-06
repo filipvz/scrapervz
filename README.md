@@ -10,6 +10,8 @@
 - Filters out past events and sorts upcoming events by date
 - Exports single-event `.ics` files for calendar import
 - Uses Streamlit caching (`@st.cache_data`) with 1-hour TTL
+- Deduplicates events by title and date
+- Network error handling with 10-second timeout
 
 ## Requirements
 - Python 3.10+
@@ -28,12 +30,12 @@ pip install streamlit requests beautifulsoup4
 From the project root:
 
 ```bash
-streamlit run Perplex/slike/vz_gem.py
+streamlit run vz_gem.py
 ```
 
 ## How It Works
 1. User selects language in the UI.
-2. App sends an HTTP GET request to the Varazdin events page.
+2. App sends an HTTP GET request to the Varazdin events page (timeout: 10s).
 3. BeautifulSoup parses event blocks (`div.eventon_list_event`).
 4. App extracts:
    - title (`span.evoet_title`)
@@ -41,13 +43,17 @@ streamlit run Perplex/slike/vz_gem.py
    - month (`em.month`)
    - time (`em.time`)
    - location (`span.event_location_attrs` -> `data-location_name`)
-5. Dates are converted to datetime values and filtered to keep only today/future events.
-6. Results are sorted and rendered in Streamlit.
-7. Each event can be downloaded as an `.ics` file generated in memory.
+5. Duplicate events (same title + date) are removed automatically.
+6. Dates are converted to datetime values and filtered to keep only today/future events.
+7. Results are sorted and rendered in Streamlit.
+8. Each event can be downloaded as an `.ics` file generated in memory.
+
+## Error Handling
+- If the server is unreachable or the request times out, the app returns an empty list gracefully.
+- If a date cannot be parsed, a fallback value is used for ICS generation (`00000000`).
 
 ## Notes
 - Source data quality depends on the structure/content of the tourism website.
-- If a date cannot be parsed, a fallback value is used for ICS generation (`00000000`).
 - ICS export is generated as an all-day event (`VALUE=DATE`).
 
 ## Author
