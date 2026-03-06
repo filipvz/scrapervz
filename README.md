@@ -1,4 +1,3 @@
-[README_vz_gem.md](https://github.com/user-attachments/files/25681598/README_vz_gem.md)
 # vz_gem.py
 
 `vz_gem.py` is a Streamlit app that fetches public event data from the official Varazdin tourism calendar, shows upcoming events, and lets users download each event as an `.ics` calendar file.
@@ -12,9 +11,10 @@
 - Uses Streamlit caching (`@st.cache_data`) with 1-hour TTL
 - Deduplicates events by title and date
 - Network error handling with 10-second timeout
+- Smart year resolution: always picks the next upcoming date, never a past one
 
 ## Requirements
-- Python 3.10+
+- Python 3.11+
 - streamlit
 - requests
 - beautifulsoup4
@@ -44,13 +44,14 @@ streamlit run vz_gem.py
    - time (`em.time`)
    - location (`span.event_location_attrs` -> `data-location_name`)
 5. Duplicate events (same title + date) are removed automatically.
-6. Dates are converted to datetime values and filtered to keep only today/future events.
-7. Results are sorted and rendered in Streamlit.
-8. Each event can be downloaded as an `.ics` file generated in memory.
+6. Dates are converted to datetime values — the source provides no year, so the app picks the first upcoming future date across candidate years.
+7. Past events are filtered out and results are sorted by date.
+8. Results are rendered in Streamlit.
+9. Each event can be downloaded as an `.ics` file generated in memory.
 
 ## Error Handling
 - If the server is unreachable or the request times out, the app returns an empty list gracefully.
-- If a date cannot be parsed, a fallback value is used for ICS generation (`00000000`).
+- If a date cannot be parsed or no future candidate exists, a fallback value is used for ICS generation (`00000000`).
 
 ## Notes
 - Source data quality depends on the structure/content of the tourism website.
