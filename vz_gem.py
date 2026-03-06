@@ -93,7 +93,7 @@ def dohvati_dogadaje(url):
                     
                 }
                 kljuc=(naslov,f"{dan} {mjesec}")
-                if naslov not in vidjeni:
+                if kljuc not in vidjeni:
                     vidjeni.add(kljuc)
                     dogadaji_lista.append(dogadaj_podaci)
                 
@@ -222,6 +222,7 @@ st.write("")
 
 st.write("Powered by Filip (20% Digital)")  
         
+
 
 
 
