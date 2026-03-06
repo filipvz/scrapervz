@@ -164,8 +164,11 @@ def datum_u_datetime(datum_string):
     if not kandidati:
         return None
 
-    # Ako godina nije dostupna u izvoru, uzmi datum najbliži današnjem.
-    odabrani = min(kandidati, key=lambda dt: abs((dt - danas).days))
+    # Odabir prvog budućeg datuma, izbjegavanje prošlih datuma
+    buduci=[dt for dt in kandidati if dt>=danas]
+    if not buduci:
+        return None
+    odabrani = min(buduci, key=lambda dt: abs((dt - danas).days))
     return datetime.combine(odabrani, datetime.min.time())
 
 
@@ -222,7 +225,6 @@ st.write("")
 
 st.write("Powered by Filip (20% Digital)")  
         
-
 
 
 
