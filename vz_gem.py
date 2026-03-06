@@ -14,7 +14,7 @@ MJESECI={
 JEZICI={
     "Hrvatski HR":{
         "url":"https://www.tourism-varazdin.hr/kalendar-dogadanja/",
-        "naslov":"Događaji u Varaždinu",
+        "naslov":"Događaji u varaždinu",
         "opis":"Dobrodošli u našu aplikaciju koja prikazuje događaje u Varaždinu",
         "gumb":"Dohvati najnovije događaje",
         "ucitavanje":"Dohvaćanje događaja...",
@@ -49,12 +49,16 @@ def dohvati_dogadaje(url):
     headers={
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     }
+    try:
+        response=requests.get(url,headers=headers,timeout=10)#Zahtjev za server, 10 sec za server
+    except requests.exceptions.RequestException: 
+        return[]
     
-    response=requests.get(url,headers=headers)#GET zahtjer za server
     dogadaji_lista=[]
+    vidjeni=set()
     if response.status_code==200: #status kod 200 ok provjera servera
         
-        soup=BeautifulSoup(response.text,"html.parser")
+        soup=BeautifulSoup(response.text,"html.parser") #Dohvaćanje sadržaja stranice
         dogadaji_html=soup.find_all("div",class_="eventon_list_event")
         
     
@@ -88,9 +92,12 @@ def dohvati_dogadaje(url):
                     "lokacija":lokacija,
                     
                 }
-
+                kljuc=(naslov,f"{dan} {mjesec}")
+                if naslov not in vidjeni:
+                    vidjeni.add(kljuc)
+                    dogadaji_lista.append(dogadaj_podaci)
                 
-                dogadaji_lista.append(dogadaj_podaci)
+               
             
     return dogadaji_lista
 
@@ -215,11 +222,6 @@ st.write("")
 
 st.write("Powered by Filip (20% Digital)")  
         
-
-
-
-
-
 
 
 
