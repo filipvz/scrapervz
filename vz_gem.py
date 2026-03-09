@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import uuid
 from datetime import datetime,timedelta
+from zoneinfo import ZoneInfo
 
 
 MJESECI={
@@ -206,15 +207,13 @@ if st.button(postavke["gumb"]):
         rezultati = sorted(filtrirani_rezultati, key=lambda d: datum_u_broj(d["datum"]))
     if rezultati:
         st.success(postavke["Uspjeh"].format(len(rezultati))) #ispis rezultata na web stranicu
-        st.caption(f"🕐 {postavke['dohvaceno']} {datetime.now().strftime('%H:%M')}")
+        st.caption(f"🕐 {postavke['dohvaceno']} {datetime.now(ZoneInfo('Europe/Zagreb')).strftime('%H:%M')}")
         for i, d in enumerate(rezultati):
             with st.expander(d['naslov']):
                 
                 st.markdown(f"📅 **{postavke['lbl_datum']}:** {d['datum']} | ⏰ **{postavke['lbl_vrijeme']}:** {d['vrijeme']}")
                 st.caption(f"📍 **{postavke['lbl_lokacija']}:** {d['lokacija']}")
-               
-                     
-                         
+                                            
                 ics_data=generiraj_ics(d)
                 st.download_button(
                     label="📅 Dodaj u kalendar",
