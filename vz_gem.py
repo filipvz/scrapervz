@@ -14,7 +14,7 @@ MJESECI={
 JEZICI={
     "Hrvatski HR":{
         "url":"https://www.tourism-varazdin.hr/kalendar-dogadanja/",
-        "naslov":"Događaji u varaždinu",
+        "naslov":"Događaji u Varaždinu",
         "opis":"Dobrodošli u našu aplikaciju koja prikazuje događaje u Varaždinu",
         "gumb":"Dohvati najnovije događaje",
         "ucitavanje":"Dohvaćanje događaja...",
@@ -23,7 +23,8 @@ JEZICI={
         "lbl_datum":"Datum",
         "lbl_vrijeme":"Vrijeme",
         "lbl_lokacija":"Lokacija",
-        "lbl_naslov":"Naslov"
+        "lbl_naslov":"Naslov",
+        "dohvaceno":"Podaci dohvaćeni u "
         
     },
     "English EN":{
@@ -37,7 +38,8 @@ JEZICI={
         "lbl_datum":"Date",
         "lbl_vrijeme":"Time",
         "lbl_lokacija":"Location",
-        "lbl_naslov":"Title"
+        "lbl_naslov":"Title",
+        "dohvaceno":"Events loaded at "
         
     }
 } 
@@ -180,13 +182,18 @@ def datum_u_broj(datum_string):
    
 #strealit sučelje
 st.set_page_config(page_title="Događaji u Varaždinu", page_icon="🎭",layout="centered")
-odabrani_jezik=st.radio("odaberite jezik/Select language: ",["Hrvatski HR","English EN"],horizontal=True)
+odabrani_jezik=st.radio("Odaberite jezik/Select language: ",["Hrvatski HR","English EN"],horizontal=True)
 postavke=JEZICI[odabrani_jezik]
+st.markdown(f"""
+    <div style="background-color:#4A0080; padding:20px; border-radius:10px; text-align:center;">
+        <h1 style="color:white;">🎭 {postavke['naslov']}</h1>
+        <p style="color:#E0C0FF;">{postavke['opis']}</p>
+    </div>
+""", unsafe_allow_html=True)
 
-st.title(postavke["naslov"])
-st.write(postavke["opis"])
 
 #gumb za dohvat događaja
+st.write("")
 if st.button(postavke["gumb"]):
     with st.spinner("Dohvaćanje događaja..."):#vizualizacija pretrage
         rezultati=dohvati_dogadaje(postavke["url"])
@@ -199,11 +206,13 @@ if st.button(postavke["gumb"]):
         rezultati = sorted(filtrirani_rezultati, key=lambda d: datum_u_broj(d["datum"]))
     if rezultati:
         st.success(postavke["Uspjeh"].format(len(rezultati))) #ispis rezultata na web stranicu
+        st.caption(f"🕐 {postavke['dohvaceno']} {datetime.now().strftime('%H:%M')}")
         for i, d in enumerate(rezultati):
-            with st.container():
-                st.subheader(d['naslov'])
+            with st.expander(d['naslov']):
+                
                 st.markdown(f"📅 **{postavke['lbl_datum']}:** {d['datum']} | ⏰ **{postavke['lbl_vrijeme']}:** {d['vrijeme']}")
                 st.caption(f"📍 **{postavke['lbl_lokacija']}:** {d['lokacija']}")
+               
                      
                          
                 ics_data=generiraj_ics(d)
