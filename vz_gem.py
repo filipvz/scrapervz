@@ -231,8 +231,9 @@ st.write("")
 st.write("")
 st.write("")
 
-st.write("Powered by Filip (20% Digital)")  
+st.write("Made by Filip (20% Digital)")  
         
+
 
 
 
