@@ -56,7 +56,7 @@ JEZICI={
         
     }
 } 
-
+#Kulturni događaji u gradu
 @st.cache_data(ttl=3600)
 def dohvati_dogadaje(url):
     
@@ -116,6 +116,7 @@ def dohvati_dogadaje(url):
             
     return dogadaji_lista
 
+#Kino Gaj filmovi
 @st.cache_data(ttl=86400)
 def dohvati_opis_filma(url_filma):
     if not url_filma:
@@ -201,7 +202,7 @@ def _ics_escape(vrijednost):
         .replace("\n", r"\n")
     )
 
-
+#Generiranje ICS kulturni događaji u gradu
 def generiraj_ics(dogadaj):
     datum_ics = datum_u_broj(dogadaj["datum"])
     pocetak = datetime.strptime(datum_ics, "%Y%m%d")
@@ -227,6 +228,7 @@ def generiraj_ics(dogadaj):
     ]
     return "\r\n".join(lines)
 
+#Generiranje ICS Kino Gaj-filmovi
 def generiraj_ics_kino(film):
     datum_dt = datum_kino_u_datetime(film["datum"])
     if datum_dt is None:
@@ -252,7 +254,7 @@ def generiraj_ics_kino(film):
     ]
     return "\r\n".join(lines)
 
-
+#Pretvaranje tekstualnog datuma u python "datetime" objekt
 def datum_u_datetime(datum_string):
     dijelovi = datum_string.split()
     if len(dijelovi) < 2:
@@ -289,11 +291,14 @@ def datum_u_datetime(datum_string):
     return datetime.combine(odabrani, datetime.min.time())
 
 
+# Pretvara tekstualni datum ("15 ožu") u broj ("20260315") za .ics i sortiranje
 def datum_u_broj(datum_string):
     datum = datum_u_datetime(datum_string)
     if datum is None:
         return "00000000"
     return datum.strftime("%Y%m%d")
+
+# Pretvara kino datum ("15.3.") u čitljiviji prikaz ("15.ožu") za UI
 def formatiraj_datum_kino(datum_string):
     dijelovi = datum_string.replace(" ", "").split(".")
     dan = dijelovi[0]
@@ -301,6 +306,7 @@ def formatiraj_datum_kino(datum_string):
     mjesec_kratica = MJESECI_OBRNUTO.get(mjesec_broj, mjesec_broj)
     return f"{dan}.{mjesec_kratica}"
 
+# Pretvara kino datum ("15.3.") u datetime objekt za filtriranje prošlih filmova
 def datum_kino_u_datetime(datum_string):
     dijelovi = datum_string.strip().split(".")
     try:
@@ -394,12 +400,13 @@ if st.button( postavke['gumb_kino']):
     else:
         st.error(postavke["greska_kino"])
 
-
+#Digitalni potpis
 st.markdown(
     "<p style='text-align:center; margin-top:80px; color:gray;'>"
     "Powered by Filip (20% Digital)</p>",
     unsafe_allow_html=True,
 )
+#PayPal gumb i link
 st.markdown(
     "<div style='text-align:center; margin-top:10px;'>"
     "<a href='https://paypal.me/filipvz' target='_blank'>"
@@ -408,6 +415,7 @@ st.markdown(
     "💙 Podržite projekt</button></a></div>",
     unsafe_allow_html=True,
 )
+#Verzija
 st.markdown(
     "<p style='text-align:center; margin-top:80px; color:gray;'>"
     "Version 1.0</p>",
