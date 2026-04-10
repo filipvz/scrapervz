@@ -1,7 +1,4 @@
-
-        
-
-
+    
 import streamlit as st  
 import requests
 from bs4 import BeautifulSoup
@@ -24,7 +21,7 @@ JEZICI={
         "url":"https://www.tourism-varazdin.hr/kalendar-dogadanja/",
         "naslov":"Događaji u Varaždinu",
         "opis":"Dobrodošli u našu aplikaciju koja prikazuje događaje u Varaždinu",
-        "gumb":" 🏛️ Dohvati najnovije kulturne događaje u gradu",
+        "gumb":" 🏛️ Dohvati najnovije događaje u gradu",
         "ucitavanje":"Dohvaćanje događaja...",
         "Uspjeh":"Pronađeno je {} događaja.",
         "greska":"Nema dostupnih događaja.",
