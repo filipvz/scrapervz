@@ -1,3 +1,7 @@
+
+        
+
+
 import streamlit as st  
 import requests
 from bs4 import BeautifulSoup
@@ -97,6 +101,14 @@ def dohvati_dogadaje(url):
                 else:
                     vrijeme="??"
                 lokacija=lokacija_element.get('data-location_name') if lokacija_element else "Nepoznata lokacija"
+                data_time=dogadaj.get("data-time","")
+                timestamp_pocetka=data_time.split("-")[0].strip() if data_time else ""
+                datum_sort=None
+                if timestamp_pocetka.isdigit():
+                    try:
+                        datum_sort=datetime.fromtimestamp(int(timestamp_pocetka), tz=ZoneInfo("Europe/Zagreb")).date().isoformat()
+                    except (ValueError, OSError, OverflowError):
+                        datum_sort=None
                                 
                 #Kreiranje riječnika i liste
 
@@ -105,6 +117,7 @@ def dohvati_dogadaje(url):
                     "datum":f"{dan} {mjesec}",
                     "vrijeme":vrijeme,
                     "lokacija":lokacija,
+                    "datum_sort":datum_sort,
                     
                 }
                 kljuc=(naslov,f"{dan} {mjesec}")
@@ -204,7 +217,10 @@ def _ics_escape(vrijednost):
 
 #Generiranje ICS kulturni događaji u gradu
 def generiraj_ics(dogadaj):
-    datum_ics = datum_u_broj(dogadaj["datum"])
+    datum_izvor = dogadaj.get("datum_sort") or dogadaj["datum"]
+    datum_ics = datum_u_broj(datum_izvor)
+    if datum_ics == "00000000":
+        return ""
     pocetak = datetime.strptime(datum_ics, "%Y%m%d")
     kraj = pocetak + timedelta(days=1)
     dtstamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
@@ -256,39 +272,45 @@ def generiraj_ics_kino(film):
 
 #Pretvaranje tekstualnog datuma u python "datetime" objekt
 def datum_u_datetime(datum_string):
+    if not datum_string:
+        return None
+
+    datum_string = str(datum_string).strip()
+    try:
+        return datetime.fromisoformat(datum_string)
+    except ValueError:
+        pass
+
     dijelovi = datum_string.split()
     if len(dijelovi) < 2:
         return None
 
     try:
-        dan = int(dijelovi[0])
+        dan = int(dijelovi[0].rstrip("."))
     except ValueError:
         return None
 
-    kratica = dijelovi[1].lower()
-    mjesec_broj = MJESECI.get(kratica, "01")
+    kratica = dijelovi[1].lower().strip(".")[:3]
+    mjesec_broj = MJESECI.get(kratica)
+    if mjesec_broj is None:
+        return None
+
     try:
         mjesec = int(mjesec_broj)
+        danas=datetime.now().date()
+        kandidat=datetime(danas.year,mjesec,dan).date()
     except ValueError:
         return None
 
-    danas = datetime.now().date()
-    kandidati = []
-    for godina in (danas.year - 1, danas.year, danas.year + 1):
-        try:
-            kandidati.append(datetime(godina, mjesec, dan).date())
-        except ValueError:
-            continue
+    
 
-    if not kandidati:
-        return None
+    if kandidat >= danas:
+        return datetime.combine(kandidat, datetime.min.time())
 
-    # Odabir prvog budućeg datuma, izbjegavanje prošlih datuma
-    buduci=[dt for dt in kandidati if dt>=danas]
-    if not buduci:
-        return None
-    odabrani = min(buduci, key=lambda dt: abs((dt - danas).days))
-    return datetime.combine(odabrani, datetime.min.time())
+    if danas.month == 12 and mjesec == 1:
+        return datetime(danas.year + 1, mjesec, dan)
+
+    return None
 
 
 # Pretvara tekstualni datum ("15 ožu") u broj ("20260315") za .ics i sortiranje
@@ -316,9 +338,12 @@ def datum_kino_u_datetime(datum_string):
         return None
     danas = datetime.now().date()
     try:
-        return datetime(danas.year, mjesec, dan)
+        kandidat = datetime(danas.year, mjesec, dan)
     except ValueError:
         return None
+    if kandidat.date() < danas and danas.month == 12 and mjesec == 1:
+        return datetime(danas.year + 1, mjesec, dan)
+    return kandidat
 
   
    
@@ -342,10 +367,14 @@ if st.button(postavke["gumb"]):
         danas = datetime.now().date()
         filtrirani_rezultati = []
         for d in rezultati:
-            datum_eventa = datum_u_datetime(d["datum"])
+            datum_izvor = d.get("datum_sort") or d["datum"]
+            datum_eventa = datum_u_datetime(datum_izvor)
             if datum_eventa and datum_eventa.date() >= danas:
                 filtrirani_rezultati.append(d)
-        rezultati = sorted(filtrirani_rezultati, key=lambda d: datum_u_broj(d["datum"]))
+        rezultati = sorted(
+            filtrirani_rezultati,
+            key=lambda d: datum_u_broj(d.get("datum_sort") or d["datum"])
+        )
     if rezultati:
         st.success(postavke["Uspjeh"].format(len(rezultati))) #ispis rezultata na web stranicu
         st.caption(f"🕐 {postavke['dohvaceno']} {datetime.now(ZoneInfo('Europe/Zagreb')).strftime('%H:%M')}")
@@ -422,6 +451,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
         
+
+
 
 
 
